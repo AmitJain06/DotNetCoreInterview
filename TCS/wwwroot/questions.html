@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ASP.NET Core Bootstrapping — Interview Q&amp;A</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#f8fafc; --accent:#7dd3fc;
+    --accent-solid:#2563eb; --dark:#0f172a; --muted:#94a3b8; --border:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:#e2e8f0;line-height:1.65}
+  header{background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 55%,#38bdf8 100%);padding:44px 20px;color:#fff;text-align:center}
+  header h1{margin:0 0 8px;font-size:2.1rem;letter-spacing:.3px}
+  header p{margin:0;opacity:.92;font-size:1.05rem}
+  .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:16px 12px}
+  .controls button{background:var(--card);color:#1e3a8a;border:1px solid #bfdbfe;padding:8px 20px;border-radius:999px;font-weight:700;cursor:pointer;font-size:.9rem;font-family:inherit}
+  .controls button:hover{background:#dbeafe}
+  nav.sticky{position:sticky;top:0;background:rgba(15,23,42,.94);backdrop-filter:blur(6px);padding:11px 8px;z-index:20;overflow-x:auto;white-space:nowrap;text-align:center}
+  nav a{color:var(--accent);text-decoration:none;margin:0 9px;font-size:.85rem;font-weight:600}
+  nav a:hover{color:#fff;text-decoration:underline}
+  main{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
+  section{margin-bottom:46px;scroll-margin-top:70px}
+  section>h2{color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:8px;font-size:1.4rem}
+  section>h2 .qty{color:#93c5fd;font-size:.9rem;font-weight:400}
+  .qa{background:var(--card);color:var(--dark);border-radius:14px;margin:14px 0;overflow:hidden;border:1px solid var(--border);box-shadow:0 4px 14px rgba(2,6,23,.35)}
+  .qa summary{cursor:pointer;padding:16px 46px 16px 20px;font-weight:700;font-size:1.02rem;position:relative;background:#f1f5f9;list-style:none}
+  .qa summary::-webkit-details-marker{display:none}
+  .qa summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:1.4rem;color:var(--accent-solid);font-weight:800}
+  .qa[open] summary::after{content:"\2212"}
+  .qa[open] summary{background:var(--accent-solid);color:#fff}
+  .qa[open] summary::after{color:#fff}
+  .qa .answer{padding:18px 22px;border-top:1px solid var(--border)}
+  .lvl{display:inline-block;background:#dbeafe;color:#1e3a8a;border-radius:999px;padding:1px 11px;font-size:.7rem;font-weight:700;margin-left:8px;vertical-align:middle;letter-spacing:.3px}
+  .lvl.adv{background:#fed7aa;color:#9a3412}
+  .lvl.int{background:#dbeafe;color:#1e3a8a}
+  .lvl.fresher{background:#dcfce7;color:#166534}
+  code{background:#e2e8f0;color:#0f172a;padding:1px 6px;border-radius:6px;font-size:.88em;font-family:Consolas,Menlo,monospace}
+  pre{background:var(--dark);color:#e2e8f0;padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:.87rem;font-family:Consolas,Menlo,monospace}
+  pre code{background:transparent;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;background:var(--card);color:var(--dark);border-radius:12px;overflow:hidden;font-size:.92rem;margin:10px 0}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border)}
+  th{background:#e2e8f0;font-weight:700}
+  tr:last-child td{border-bottom:none}
+  footer{text-align:center;color:#94a3b8;font-size:.85rem;padding:26px 12px;border-top:1px solid #1e293b}
+  footer code{background:#1e293b;color:#7dd3fc}
+  @media (max-width:600px){header h1{font-size:1.5rem} main{padding-top:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ASP.NET Core Bootstrapping — Interview Q&amp;A</h1>
+  <p>30 questions &amp; model answers based on the default Minimal API template (the TCS app)</p>
+</header>
+
+<div class="controls">
+  <button id="expandAll" type="button">＋ Expand all answers</button>
+  <button id="collapseAll" type="button">－ Collapse all answers</button>
+</div>
+
+<nav class="sticky">
+  <a href="#part1">1 · Entry Point</a>
+  <a href="#part2">2 · CreateBuilder / Build / Run</a>
+  <a href="#part3">3 · Configuration &amp; Environment</a>
+  <a href="#part4">4 · Dependency Injection</a>
+  <a href="#part5">5 · Middleware &amp; Pipeline</a>
+  <a href="#part6">6 · Hosting &amp; Advanced</a>
+  <a href="#part7">7 · Quick-fire</a>
+</nav>
+
+<main>
+
+<section id="part1">
+  <h2>Part 1 — Fundamentals &amp; Entry Point <span class="qty">(Q1–Q4)</span></h2>
+
+  <details class="qa" open>
+    <summary>Q1. Where is the <code>Main</code> method? Your <code>Program.cs</code> has no visible one.<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>With C# 10+ <strong>top-level statements</strong>, the compiler generates the <code>Main</code> method for me — every line in <code>Program.cs</code> becomes the body of a generated <code>static Main</code> (named <code>&lt;Main&gt;$</code>). The app starts with <code>var builder = WebApplication.CreateBuilder(args)</code>; <code>args</code> are the command-line arguments passed to <code>Main</code> and later merged into configuration.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q2. What does <code>Microsoft.NET.Sdk.Web</code> in the <code>.csproj</code> do?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>It is the <strong>Web SDK</strong>. It references the <code>Microsoft.AspNetCore.App</code> shared framework, so all ASP.NET Core types (<code>WebApplication</code>, Kestrel, etc.) are available without installing NuGet packages. It also adds Web build targets: publishing behaviour, <code>wwwroot</code> handling and <code>launchSettings.json</code> discovery. A console project uses <code>Microsoft.NET.Sdk</code> and cannot call <code>WebApplication</code>.</p>
+    </div>
+  </details>
+  <details class="qa">
+    <summary>Q3. Why are there no <code>using</code> statements in <code>Program.cs</code>?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>Because <code>&lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;</code> is set in the <code>.csproj</code>. For the Web SDK, it auto-imports <code>Microsoft.AspNetCore.Builder</code> (so <code>WebApplication</code> and <code>app.MapGet</code> resolve), <code>Microsoft.AspNetCore.Hosting</code>, <code>Microsoft.AspNetCore.Http</code>, <code>Microsoft.AspNetCore.Routing</code>, plus <code>Microsoft.Extensions.Configuration</code>, <code>DependencyInjection</code>, <code>Hosting</code> and <code>Logging</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q4. Minimal API vs controller-based (MVC) app — what's different?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>A <strong>Minimal API</strong> uses top-level statements and inline lambdas (<code>app.MapGet("/", () =&gt; "Hello World!")</code>); there is no <code>Startup.cs</code>. An <strong>MVC</strong> app still starts in <code>Program.cs</code>, but registers <code>builder.Services.AddControllers()</code> and calls <code>app.MapControllers()</code>, and requests are routed to <code>Controller</code> classes. Minimal APIs are leaner (fewer allocations, less ceremony); MVC brings controllers, filters, model binding, validation and view engines out of the box.</p>
+    </div>
+  </details>
+</section>
+<section id="part2">
+  <h2>Part 2 — The Core Lifecycle: CreateBuilder / Build / Run <span class="qty">(Q5–Q9)</span></h2>
+
+  <details class="qa">
+    <summary>Q5. What happens on line 1: <code>WebApplication.CreateBuilder(args)</code>?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>It returns a <code>WebApplicationBuilder</code> and initialises the infrastructure:</p>
+      <ol>
+        <li><strong>Configuration</strong> — loads <code>appsettings.json</code>, then <code>appsettings.{Environment}.json</code>, then (in Development) user-secrets, then environment variables, then command-line args.</li>
+        <li><strong>Environment</strong> — reads <code>ASPNETCORE_ENVIRONMENT</code> (set to <code>Development</code> by <code>launchSettings.json</code>).</li>
+        <li><strong>Hosting server</strong> — configures <strong>Kestrel</strong> and wires up <strong>IIS integration</strong>.</li>
+        <li><strong>Logging</strong> — registers the default providers: Console, Debug, EventSource, EventLog (Windows).</li>
+        <li><strong>DI container</strong> — creates the <code>IServiceCollection</code> and registers framework services (configuration, logging, lifetime, routing, server).</li>
+      </ol>
+      <p>Nothing is listening yet — this is only the setup phase.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q6. What does <code>builder.Build()</code> do?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>It is the construction phase:</p>
+      <ol>
+        <li><strong>Validates</strong> the registered services (fail-fast on invalid registrations).</li>
+        <li><strong>Builds the <code>IServiceProvider</code></strong> — the finalised DI container.</li>
+        <li><strong>Creates the <code>WebApplication</code></strong> (<code>app</code>), which is at once the <strong>host</strong>, the <strong>request-pipeline builder</strong> (<code>IApplicationBuilder</code>) and the <strong>endpoint router</strong> (<code>IEndpointRouteBuilder</code>).</li>
+        <li>Applies <strong>environment-specific default middleware</strong>: Developer Exception Page in Development; ExceptionHandler + HSTS + HTTPS redirection in Production.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q7. What does <code>app.Run()</code> do?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>It <strong>starts the Kestrel server</strong>, binds the configured URL (<code>http://localhost:5279</code> here), and then <strong>blocks the main thread</strong> via <code>WaitForShutdownAsync()</code> so the process stays alive until Ctrl+C / SIGTERM triggers graceful shutdown through <code>IHostApplicationLifetime</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q8. The <code>args</code> passed to <code>CreateBuilder</code> — where do they come from and what's their purpose?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>They are the command-line arguments from the generated <code>Main</code>. The framework adds them as the <strong>last (highest-priority) configuration source</strong>, so they can override <code>appsettings.json</code> at runtime — e.g. <code>dotnet run --urls http://localhost:5000</code> or overrides of any configuration key.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q9. Which files get involved between <code>dotnet run</code> and the app serving responses?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p><code>dotnet run</code> = build + execute. It uses:</p>
+      <ul>
+        <li><code>TCS.csproj</code> — defines the build (Web SDK, <code>net8.0</code>, implicit usings).</li>
+        <li><code>Program.cs</code> — the bootstrap code itself.</li>
+        <li><code>Properties/launchSettings.json</code> — run profile, port, <code>ASPNETCORE_ENVIRONMENT</code> (dev-only; not published).</li>
+        <li><code>appsettings.json</code> + <code>appsettings.Development.json</code> — configuration and logging levels.</li>
+      </ul>
+    </div>
+  </details>
+</section>
+<section id="part3">
+  <h2>Part 3 — Configuration &amp; Environment <span class="qty">(Q10–Q13)</span></h2>
+
+  <details class="qa">
+    <summary>Q10. What is the configuration source order, and why does it matter?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>Later sources <strong>override</strong> earlier ones:</p>
+      <ol>
+        <li><code>appsettings.json</code></li>
+        <li><code>appsettings.{Environment}.json</code></li>
+        <li>User secrets (Development only)</li>
+        <li>Environment variables</li>
+        <li>Command-line arguments</li>
+      </ol>
+      <p>That's why <code>appsettings.Development.json</code> can override <code>appsettings.json</code>, and secrets/env vars/args can override both. Values are exposed as a key-value map via <code>IConfiguration</code> and can be bound to POCOs with <code>IOptions&lt;T&gt;</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q11. How is <code>appsettings.Development.json</code> selected instead of <code>appsettings.json</code>?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>The environment is resolved from <code>ASPNETCORE_ENVIRONMENT</code> (set to <code>Development</code> by <code>launchSettings.json</code>). The configuration builder then calls <code>AddJsonFile("appsettings." + environment + ".json", optional: true)</code> — it is only loaded if the file exists. Set <code>ASPNETCORE_ENVIRONMENT=Production</code> and the app looks for <code>appsettings.Production.json</code> instead.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q12. What is <code>ASPNETCORE_ENVIRONMENT</code>, and what changes when you switch it?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>It is the runtime environment name read at startup. Besides selecting the environment config file, it changes the <strong>default middleware</strong>: Development gets the Developer Exception Page (rich stack traces); Production gets <code>ExceptionHandler</code> + HSTS. Your code can branch with <code>app.Environment.IsDevelopment()</code> via the injected <code>IHostEnvironment</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q13. What is in <code>launchSettings.json</code>, and does it get deployed?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>It defines the run <strong>profiles</strong> (<code>http</code>, <code>IIS Express</code>), the application URL (<code>http://localhost:5279</code>) and environment variables. Crucially it is <strong>not deployed</strong> — it is only used by <code>dotnet run</code> and Visual Studio during development. In production, URLs/config come from <code>ASPNETCORE_URLS</code> or platform environment variables.</p>
+    </div>
+  </details>
+</section>
+<section id="part4">
+  <h2>Part 4 — Dependency Injection <span class="qty">(Q14–Q16)</span></h2>
+
+  <details class="qa">
+    <summary>Q14. How is DI involved in this 6-line app?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p><code>CreateBuilder</code> creates the <code>IServiceCollection</code>; <code>Build()</code> materialises the <code>ServiceProvider</code>. Even routing, logging, configuration and the web server are resolved through DI internally. Your own services would be registered via <code>builder.Services.AddSingleton&lt;IService, Service&gt;()</code>, then injected straight into minimal-API lambdas — e.g. <code>app.MapGet("/data", (IMyService svc) =&gt; svc.Get())</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q15. Explain the three DI lifetimes and when to use each.<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <ul>
+        <li><strong>Singleton</strong> — one instance for the whole process (caches, <code>HttpClient</code>).</li>
+        <li><strong>Scoped</strong> — one instance per HTTP request (EF Core <code>DbContext</code>, request-wide state).</li>
+        <li><strong>Transient</strong> — a new instance every time it is resolved (cheap, stateless services).</li>
+      </ul>
+      <p>Classic trap: never consume a Scoped service from a Singleton — the singleton outlives every request scope.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q16. Is the built-in DI container enough, or do you ever need a third-party one?<span class="lvl adv">Senior</span></summary>
+    <div class="answer">
+      <p>The built-in <code>Microsoft.Extensions.DependencyInjection</code> container covers the vast majority of apps: lifetimes, open generics, <code>IServiceProviderFactory</code>/<code>IServiceCollection</code> abstractions. Teams switch to Autofac/Scrutor/Microsoft.Extensions.DependencyInjection.AutoActivate when they need features the default lacks: decorators, keyed-by-convention registration, interception, or complex dynamic scanning.</p>
+    </div>
+  </details>
+</section>
+<section id="part5">
+  <h2>Part 5 — Middleware &amp; the Request Pipeline <span class="qty">(Q17–Q22)</span></h2>
+
+  <details class="qa">
+    <summary>Q17. What is middleware, and how is a request processed in this app?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>Middleware are components stacked into a <strong>pipeline</strong>; each request flows through them in order — each can act before/after calling the next, or short-circuit. In this app the pipeline is roughly: <em>Developer Exception Page → Routing → your endpoint</em> in Development, and <em>ExceptionHandler → HSTS → HTTPS Redirection → Routing → endpoint</em> in Production. The request enters Kestrel, travels down the pipeline, the matched endpoint's lambda runs, and the response flows back out.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q18. What are <code>Use</code>, <code>Map</code> and <code>Run</code> in a pipeline?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <ul>
+        <li><code>app.Use(...)</code> — adds middleware that invokes <code>next()</code> to continue down the pipeline.</li>
+        <li><code>app.Map(...)</code> — branches the pipeline by path prefix.</li>
+        <li><code>app.Run(...)</code> — <strong>terminal</strong> middleware; it never calls <code>next</code> and ends the pipeline.</li>
+      </ul>
+      <p>Note: <code>app.MapGet("/", ...)</code> is <em>endpoint routing</em>, not pipeline middleware.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q19. In what order must middleware be registered?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>Registration order == execution order. Classic examples: <code>UseExceptionHandler</code> must be e<strong>arliest</strong> (outermost) so it can catch exceptions from everything downstream; <code>UseCors</code>, <code>UseAuthentication</code> and <code>UseAuthorization</code> must run before endpoints; the terminal <code>MapControllers()</code>/<code>MapGet</code> go last.</p>
+    </div>
+  </details>
+  <details class="qa">
+    <summary>Q20. Conventional routing vs endpoint routing — what's the difference?<span class="lvl adv">Senior</span></summary>
+    <div class="answer">
+      <p>Modern <strong>endpoint routing</strong> separates route <em>matching</em> (<code>UseRouting</code>) from route <em>execution</em> (<code>UseEndpoints</code>/<code>Map*</code>). All routes are collected into an <code>EndpointDataSource</code> and matched by routing middleware — which lets middleware (like auth) run <strong>between matching and execution</strong>. Old-style <code>UseMvc</code> intertwined the two. Endpoint routing is also what powers Minimal API's <code>MapGet</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q21. What happens when you request <code>http://localhost:5279/anything-else</code>?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>Routing matches no endpoint, so the client gets a <strong>404</strong>. This app only registers <code>GET /</code>; every other path is unmatched, and the minimal template has no fallback page.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q22. How does the Developer Exception Page help, and is it safe in Production?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>It renders detailed stack traces, query strings and headers to speed up debugging. It is <strong>not safe for Production</strong> (information disclosure), which is why production replaces it with <code>UseExceptionHandler</code> — a generic, friendly error page while details are only logged server-side.</p>
+    </div>
+  </details>
+</section>
+<section id="part6">
+  <h2>Part 6 — Hosting, Kestrel &amp; Advanced <span class="qty">(Q23–Q30)</span></h2>
+
+  <details class="qa">
+    <summary>Q23. What is Kestrel?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>The default cross-platform, high-performance web server for ASP.NET Core, built directly on sockets (in-process in .NET 8). In production you usually run it behind a reverse proxy like IIS or Nginx that forwards requests to Kestrel: the proxy handles TLS, load-balancing and static content, while Kestrel does the application work.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q24. <code>WebApplication</code> vs the old .NET Core 3.x <code>IHostBuilder</code> — what changed?<span class="lvl adv">Senior</span></summary>
+    <div class="answer">
+      <p><code>WebApplication</code> (added in .NET 6) unified <code>IHostBuilder</code>, <code>IWebHostBuilder</code>, the middleware pipeline and routing into a <strong>single builder for web apps</strong>, removing the old two-builder complexity and reducing overhead/allocation. In .NET 7+ you still opt into extra features via <code>builder.WebHost</code> (Kestrel/IIS options) or <code>builder.Host</code> (generic-host extensions like third-party containers).</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q25. How would you add your own services and middleware to this app?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <pre><code>builder.Services.AddScoped&lt;IMyService, MyService&gt;(); // DI
+app.UseMiddleware&lt;MyMiddleware&gt;();                    // pipeline
+app.MapGet("/data", (IMyService svc) =&gt; svc.Get());   // endpoint
+</code></pre>
+      <p>The lambda automatically resolves <code>IMyService</code> from the DI container built in <code>Build()</code>.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q26. What is graceful shutdown and how is it triggered?<span class="lvl adv">Senior</span></summary>
+    <div class="answer">
+      <p>Via <code>IHostApplicationLifetime</code> (<code>ApplicationStarted</code> / <code>Stopping</code> / <code>Stopped</code>). On Ctrl+C / SIGTERM the app stops accepting new requests, lets in-flight requests finish (within a configured timeout), disposes the <code>IServiceProvider</code>, then exits cleanly — rather than dying abruptly and losing work.</p>
+    </div>
+  </details>
+  <details class="qa">
+    <summary>Q27. Explain the full request lifecycle in this app end-to-end.<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <ol>
+        <li>Kestrel accepts the TCP connection and produces an <code>HttpContext</code>.</li>
+        <li>Framework middleware runs (e.g. Developer Exception Page in Development).</li>
+        <li>Routing middleware matches <code>GET /</code> to the registered <code>RouteEndpoint</code>.</li>
+        <li>The endpoint middleware executes the lambda → <code>"Hello World!"</code> (or here, the questions page).</li>
+        <li>The response is written with the correct content type (text/plain or text/html).</li>
+        <li><code>HttpContext</code> is disposed; the connection is reused via keep-alive.</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q28. If you deploy this to IIS, what does the app need to know?<span class="lvl adv">Senior</span></summary>
+    <div class="answer">
+      <p>ASP.NET Core does not run <em>inside</em> IIS — IIS's <strong>ASP.NET Core Module (ANCM)</strong> reverse-proxies requests to Kestrel and surfaces the <code>ASPNETCORE_IIS_HTTP_REQUEST</code> env var, which the framework detects during <code>CreateBuilder</code> to enable IIS integration (forwarded headers, etc.). A <code>web.config</code> is only needed in the published output when hosting on IIS.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q29. The app starts but returns 500 in Development — what do you check first?<span class="lvl int">Intermediate</span></summary>
+    <div class="answer">
+      <p>The Developer Exception Page should render the stack trace, so first confirm <code>ASPNETCORE_ENVIRONMENT</code> is actually set to <code>Development</code>. If it is set but no page appears, the failure likely happened <em>before</em> the pipeline (e.g. a config file failed to load or the server couldn't bind the port) — check the console logs and whether the port is already in use.</p>
+    </div>
+  </details>
+
+  <details class="qa">
+    <summary>Q30. How do the <code>http</code> and <code>IIS Express</code> profiles differ in <code>launchSettings.json</code>?<span class="lvl fresher">Fresher</span></summary>
+    <div class="answer">
+      <p>They are separate <strong>run profiles</strong>: <code>http</code> runs the project directly on Kestrel at <code>http://localhost:5279</code>; <code>IIS Express</code> runs under IIS Express using the <code>iisSettings</code> section. Both set <code>ASPNETCORE_ENVIRONMENT=Development</code> and launch the browser. The profile is chosen in the IDE or with <code>dotnet run --launch-profile</code> — different ways of hosting the <em>same</em> Kestrel app.</p>
+    </div>
+  </details>
+</section>
+<section id="part7">
+  <h2>Part 7 — Quick-fire One-liners <span class="qty">(Bonus)</span></h2>
+  <table>
+    <thead><tr><th>Question</th><th>One-liner answer</th></tr></thead>
+    <tbody>
+      <tr><td>What is the entry point of a Minimal API?</td><td>A generated <code>Main</code> from top-level statements in <code>Program.cs</code>.</td></tr>
+      <tr><td>What loads config from <code>appsettings.Development.json</code>?</td><td><code>WebApplication.CreateBuilder</code> checking <code>appsettings.{Environment}.json</code>.</td></tr>
+      <tr><td>Who decides <code>Development</code> vs <code>Production</code>?</td><td><code>ASPNETCORE_ENVIRONMENT</code>, set by <code>launchSettings.json</code> (dev) or host/platform config (prod).</td></tr>
+      <tr><td>What is the DI container's job?</td><td>Construct and manage dependencies for registered services, injected at runtime.</td></tr>
+      <tr><td>How many <code>Main</code> methods can a project have?</td><td>Exactly one (it's the entry point; more is a compile error).</td></tr>
+      <tr><td>Does <code>app.MapGet("/", ...)</code> require controllers?</td><td>No — it maps a route directly to a lambda (Minimal API).</td></tr>
+      <tr><td>What is the terminal action of the pipeline?</td><td>The matched endpoint's delegate — nothing after it runs.</td></tr>
+      <tr><td>Why did the build report 0 warnings?</td><td>The Web SDK + implicit usings give full coverage by default.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  ASP.NET Core Bootstrapping — interview prep. Built for the default <code>TCS</code> Minimal API template (net8.0).
+</footer>
+
+<script>
+  const expandAll = document.getElementById('expandAll');
+  const collapseAll = document.getElementById('collapseAll');
+  const all = Array.from(document.querySelectorAll('details.qa'));
+
+  expandAll.addEventListener('click', () => all.forEach(d => d.open = true));
+  collapseAll.addEventListener('click', () => all.forEach(d => d.open = false));
+</script>
+
+</body>
+</html>

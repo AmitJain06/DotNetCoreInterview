@@ -1,0 +1,69 @@
+## .NET / ASP.NET Core build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio solution / IDE files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+*.vspscc
+*.vssscc
+*.scc
+.vscode/
+
+## Publish / test output
+publish/
+artifacts/
+TestResults/
+*.coverage
+*.coveragexml
+*.trx
+
+## User / machine-local config (do not commit)
+appsettings.local.json
+appsettings.*.local.json
+appsettings.Development.local.json
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+*.nupkg.metadata
+*.cache
+*.orig
+
+## Logs & temp
+*.log
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+
+## OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Rider / other IDEs
+.idea/
+*.iml
+
+## Misc
+run.log
+*.bak
